@@ -6,6 +6,7 @@ import kaptainwutax.mcutils.block.Block;
 import kaptainwutax.mcutils.block.Blocks;
 import kaptainwutax.mcutils.rand.ChunkRand;
 import kaptainwutax.mcutils.state.Dimension;
+import kaptainwutax.mcutils.util.data.Pair;
 import kaptainwutax.mcutils.util.math.DistanceMetric;
 import kaptainwutax.mcutils.util.pos.BPos;
 import kaptainwutax.mcutils.util.pos.CPos;
@@ -59,8 +60,8 @@ public class Main {
 	public static void kernel(long structureSeed) {
 		BiomeSource biomeSource = BiomeSource.of(Dimension.NETHER, VERSION, structureSeed);
 		ChunkGenerator generator = ChunkGenerator.of(Dimension.NETHER, biomeSource);
-		BPos fortressPos = closeFortresses(QUADS, structureSeed);
-		if (fortressPos == null) return;
+		Pair<BPos[], Integer> fortressPos = closeFortresses(QUADS, structureSeed);
+		if (fortressPos.getSecond() < 1) return;
 		for (BPos pos : POSITIONS) {
 			if (pos == null) continue;
 			Block[] blocks = generator.getColumnAt(pos.getX(), pos.getZ());
@@ -70,21 +71,24 @@ public class Main {
 		}
 		System.out.println("----");
 		System.out.printf("Seed %d works for radius %d and tiling %d in version %s%n", structureSeed, circleRadius, tilingSpacing, VERSION);
-		System.out.printf("Fortress can be found at /tp @p %d ~ %d%n", fortressPos.getX(), fortressPos.getZ());
+		for (BPos pos : fortressPos.getFirst()) {
+			System.out.printf("Fortress can be found at /tp @p %d ~ %d%n", pos.getX(), pos.getZ());
+		}
 	}
 
-	public static BPos closeFortresses(RPos[] quads, long structureSeed) {
-
+	public static Pair<BPos[], Integer> closeFortresses(RPos[] quads, long structureSeed) {
+		BPos[] positions = new BPos[quads.length];
+		int idx = 0;
 		ChunkRand rand = new ChunkRand();
 		for (RPos quad : quads) {
 			CPos cPos = FORTRESS.getInRegion(structureSeed, quad.getX(), quad.getZ(), rand);
 			if (cPos != null) { //fortress share with bastion
 				BPos bPos = cPos.toBlockPos();
 				if (DistanceMetric.EUCLIDEAN_SQ.getDistance(bPos.getX() - centerX, 0, bPos.getZ() - centerZ) <= circleRadiusSqr) {
-					return bPos;
+					positions[idx++] = bPos;
 				}
 			}
 		}
-		return null;
+		return new Pair<>(positions, idx);
 	}
 }
