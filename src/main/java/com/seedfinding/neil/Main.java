@@ -1,11 +1,15 @@
 package com.seedfinding.neil;
 
 import kaptainwutax.biomeutils.source.BiomeSource;
+import kaptainwutax.featureutils.structure.Fortress;
 import kaptainwutax.mcutils.block.Block;
 import kaptainwutax.mcutils.block.Blocks;
+import kaptainwutax.mcutils.rand.ChunkRand;
 import kaptainwutax.mcutils.state.Dimension;
 import kaptainwutax.mcutils.util.math.DistanceMetric;
 import kaptainwutax.mcutils.util.pos.BPos;
+import kaptainwutax.mcutils.util.pos.CPos;
+import kaptainwutax.mcutils.util.pos.RPos;
 import kaptainwutax.mcutils.version.MCVersion;
 import kaptainwutax.terrainutils.ChunkGenerator;
 
@@ -17,12 +21,20 @@ public class Main {
 	public static final MCVersion VERSION = MCVersion.v1_16_5;
 	public static final Predicate<Block> OK_BLOCK = b -> b == Blocks.LAVA || b == Blocks.AIR;
 	public static final int SUITABLE_OFFSET = 7; // how many block above sea level should be ok
-	public static final int circleRadius = 110;
+	public static final int circleRadius = 128;
 	public static final int circleRadiusSqr = circleRadius * circleRadius;
 	public static final int centerX = 0;
 	public static final int centerZ = 0;
 	public static final int tilingSpacing = 8;
 	public static final int tiling1Dimension = (int) Math.ceil(((double) circleRadius * 2) / tilingSpacing);
+	public static final Fortress FORTRESS = new Fortress(VERSION);
+	public static final RPos[] QUADS = {
+			new RPos(-1, -1, FORTRESS.getSpacing()),
+			new RPos(-1, 0, FORTRESS.getSpacing()),
+			new RPos(0, -1, FORTRESS.getSpacing()),
+			new RPos(0, 0, FORTRESS.getSpacing())
+	};
+
 	public static final BPos[] POSITIONS = new BPos[tiling1Dimension * tiling1Dimension];
 
 	static {
@@ -44,9 +56,11 @@ public class Main {
 	}
 
 
-	public static void kernel(long worldseed) {
-		BiomeSource biomeSource = BiomeSource.of(Dimension.NETHER, VERSION, worldseed);
+	public static void kernel(long structureSeed) {
+		BiomeSource biomeSource = BiomeSource.of(Dimension.NETHER, VERSION, structureSeed);
 		ChunkGenerator generator = ChunkGenerator.of(Dimension.NETHER, biomeSource);
+		BPos fortressPos = closeFortresses(QUADS, structureSeed);
+		if (fortressPos == null) return;
 		for (BPos pos : POSITIONS) {
 			if (pos == null) continue;
 			Block[] blocks = generator.getColumnAt(pos.getX(), pos.getZ());
@@ -54,6 +68,23 @@ public class Main {
 				if (!OK_BLOCK.test(blocks[y])) return;
 			}
 		}
-		System.out.printf("Seed %d works for radius %d and tiling %d in version %s%n", worldseed, circleRadius, tilingSpacing, VERSION);
+		System.out.println("----");
+		System.out.printf("Seed %d works for radius %d and tiling %d in version %s%n", structureSeed, circleRadius, tilingSpacing, VERSION);
+		System.out.printf("Fortress can be found at /tp @p %d ~ %d%n", fortressPos.getX(), fortressPos.getZ());
+	}
+
+	public static BPos closeFortresses(RPos[] quads, long structureSeed) {
+
+		ChunkRand rand = new ChunkRand();
+		for (RPos quad : quads) {
+			CPos cPos = FORTRESS.getInRegion(structureSeed, quad.getX(), quad.getZ(), rand);
+			if (cPos != null) { //fortress share with bastion
+				BPos bPos = cPos.toBlockPos();
+				if (DistanceMetric.EUCLIDEAN_SQ.getDistance(bPos.getX() - centerX, 0, bPos.getZ() - centerZ) <= circleRadiusSqr) {
+					return bPos;
+				}
+			}
+		}
+		return null;
 	}
 }
