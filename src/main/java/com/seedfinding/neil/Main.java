@@ -14,6 +14,7 @@ import kaptainwutax.mcutils.util.pos.RPos;
 import kaptainwutax.mcutils.version.MCVersion;
 import kaptainwutax.terrainutils.ChunkGenerator;
 
+import java.util.Random;
 import java.util.Scanner;
 import java.util.function.Predicate;
 import java.util.stream.LongStream;
@@ -58,6 +59,7 @@ public class Main {
 
 
 	public static void kernel(long structureSeed) {
+		structureSeed=(new Random()).nextLong();
 		BiomeSource biomeSource = BiomeSource.of(Dimension.NETHER, VERSION, structureSeed);
 		ChunkGenerator generator = ChunkGenerator.of(Dimension.NETHER, biomeSource);
 		Pair<BPos[], Integer> fortressPos = closeFortresses(QUADS, structureSeed);
