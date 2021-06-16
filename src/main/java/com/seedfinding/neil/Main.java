@@ -74,7 +74,9 @@ public class Main {
 		System.out.println("----");
 		System.out.printf("Seed %d works for radius %d and tiling %d in version %s%n", structureSeed, circleRadius, tilingSpacing, VERSION);
 		for (BPos pos : fortressPos.getFirst()) {
-			System.out.printf("Fortress can be found at /tp @p %d ~ %d%n", pos.getX(), pos.getZ());
+			if (pos!=null){
+				System.out.printf("Fortress can be found at /tp @p %d ~ %d%n", pos.getX(), pos.getZ());
+			}
 		}
 	}
 
